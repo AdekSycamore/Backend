@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  reverse-proxy:
+    image: traefik:latest
+    container_name: traefik
+    command: --api.insecure=true --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - traefik.enable=false
+
+  users:
+    container_name: users
+    build:
+      context: ./api
+    labels:
+      - traefik.http.routers.home.rule=Host(`api.localhost`) && PathPrefix(`/users`)
+      - traefik.http.services.home.loadbalancer.server.port=8000
+    volumes:
+      - ./api/app:/src/app
+
+  ai:
+    container_name: ai
+    build:
+      context: ./ai
+    labels:
+      - traefik.http.routers.home.rule=Host(`api.localhost`) && PathPrefix(`/ai`)
+      - traefik.http.services.home.loadbalancer.server.port=8001
+    volumes:
+      - ./ai/app:/src/app
